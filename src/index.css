@@ -1,21 +1,22 @@
 :root {
-  --space: #03111d;
-  --panel: #0a1d2f;
-  --panel-strong: #0e2236;
-  --text: #d7e6ff;
-  --muted: #b7c6cf;
-  --cyan: #00e5ff;
-  --cyan-soft: #9af7ff;
-  --line: rgba(137, 177, 202, 0.17);
-  --display: Montserrat, Inter, ui-sans-serif, system-ui, sans-serif;
-  --mono: "Share Tech Mono", "Courier New", ui-monospace, monospace;
+  --paper: #f4fbff;
+  --ink: #121c5b;
+  --body: #1f2c68;
+  --muted: #6f779a;
+  --violet: #7a0ff5;
+  --aqua: #80dcea;
+  --aqua-soft: #a9ddea;
+  --aqua-dark: #4faec0;
+  --display: "Space Grotesk", Inter, ui-sans-serif, system-ui, sans-serif;
+  --text: Inter, ui-sans-serif, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", "Courier New", ui-monospace, monospace;
 
-  color: var(--text);
-  background: var(--space);
-  font-family: var(--display);
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--text);
   font-size: 16px;
-  font-weight: 600;
-  line-height: 1.55;
+  font-weight: 500;
+  line-height: 1.5;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -41,7 +42,11 @@ button {
   font: inherit;
 }
 
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
 ::selection {
-  color: #02111e;
-  background: var(--cyan);
+  color: #ffffff;
+  background: var(--violet);
 }
