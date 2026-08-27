@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Avatar interactivo</title>
+<style>
+  :root {
+    --paper: #f4fbff;
+    --ink: #111c5b;
+    --violet: #7a0ff5;
+    --aqua: #a9ddea;
+    --stripe: #b9edf5;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: var(--paper);
+    font-family: Inter, Arial, Helvetica, sans-serif;
+  }
+
+  .wrap {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+  }
+
+  canvas {
+    display: block;
+    width: min(100vw, 760px);
+    height: auto;
+    max-height: 100vh;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="avatarCanvas" width="760" height="900" aria-label="Avatar ilustrado que sigue el mouse"></canvas>
+</div>
+
+<script>
+const canvas = document.getElementById('avatarCanvas')
+const ctx = canvas.getContext('2d')
+
+const purple = '#7a0ff5'
+const cyan = '#a9ddea'
+const cyanDark = '#8fcfdd'
+const pale = '#f4fbff'
+const stripe = '#b9edf5'
+
+let pointer = { x: canvas.width / 2, y: canvas.height / 2 }
+let smooth = { x: 0, y: 0 }
+
+function updatePointer(event) {
+  const rect = canvas.getBoundingClientRect()
+  pointer.x = ((event.clientX - rect.left) * canvas.width) / rect.width
+  pointer.y = ((event.clientY - rect.top) * canvas.height) / rect.height
+}
+
+function resetPointer() {
+  pointer.x = canvas.width / 2
+  pointer.y = canvas.height / 2
+}
+
+window.addEventListener('pointermove', updatePointer)
+window.addEventListener('pointerleave', resetPointer)
+
+function roundedRect(x, y, width, height, radius) {
+  ctx.beginPath()
+  ctx.moveTo(x + radius, y)
+  ctx.lineTo(x + width - radius, y)
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius)
+  ctx.lineTo(x + width, y + height - radius)
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height)
+  ctx.lineTo(x + radius, y + height)
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius)
+  ctx.lineTo(x, y + radius)
+  ctx.quadraticCurveTo(x, y, x + radius, y)
+}
+
+function drawBackground() {
+  ctx.fillStyle = pale
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(0, 258, canvas.width, 390)
+  ctx.clip()
+  ctx.strokeStyle = stripe
+  ctx.lineWidth = 5
+  ctx.globalAlpha = 0.78
+  for (let x = -520; x < canvas.width + 520; x += 18) {
+    ctx.beginPath()
+    ctx.moveTo(x, 690)
+    ctx.lineTo(x + 520, 170)
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
+function drawStubble(cx, cy, radiusX, radiusY, rows, cols, alpha) {
+  ctx.save()
+  ctx.beginPath()
+  ctx.ellipse(cx, cy, radiusX, radiusY, 0, 0, Math.PI * 2)
+  ctx.clip()
+  ctx.fillStyle = cyanDark
+  ctx.globalAlpha = alpha
+
+  for (let row = 0; row < rows; row += 1) {
+    for (let col = 0; col < cols; col += 1) {
+      const x = cx - radiusX + col * 9 + (row % 2) * 4
+      const y = cy - radiusY + row * 8
+      const nx = (x - cx) / radiusX
+      const ny = (y - cy) / radiusY
+      if (nx * nx + ny * ny < 1) {
+        ctx.beginPath()
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
+  }
+
+  ctx.restore()
+  ctx.globalAlpha = 1
+}
+
+function drawEar(side) {
+  ctx.beginPath()
+  ctx.moveTo(side * 183, -30)
+  ctx.bezierCurveTo(side * 226, -52, side * 255, -5, side * 239, 49)
+  ctx.bezierCurveTo(side * 228, 87, side * 192, 92, side * 181, 60)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(side * 205, 2)
+  ctx.bezierCurveTo(side * 178, 9, side * 188, 55, side * 208, 45)
+  ctx.bezierCurveTo(side * 224, 37, side * 212, 20, side * 201, 31)
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.arc(side * 219, 51, 9, 0.2, 1.8 * Math.PI)
+  ctx.stroke()
+}
+
+function drawAvatar() {
+  const focusX = 380
+  const focusY = 420
+  const targetX = Math.max(-1, Math.min(1, (pointer.x - focusX) / 300))
+  const targetY = Math.max(-1, Math.min(1, (pointer.y - focusY) / 260))
+
+  smooth.x += (targetX - smooth.x) * 0.075
+  smooth.y += (targetY - smooth.y) * 0.075
+
+  const headX = smooth.x * 10
+  const headY = smooth.y * 7
+  const eyeX = smooth.x * 11
+  const eyeY = smooth.y * 7
+
+  ctx.save()
+  ctx.translate(380 + headX, 438 + headY)
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.strokeStyle = purple
+  ctx.lineWidth = 5.5
+
+  // Shoulders
+  ctx.fillStyle = cyan
+  ctx.beginPath()
+  ctx.moveTo(-307, 372)
+  ctx.bezierCurveTo(-298, 278, -228, 250, -110, 233)
+  ctx.bezierCurveTo(-62, 277, 52, 326, 169, 333)
+  ctx.bezierCurveTo(230, 337, 279, 320, 303, 301)
+  ctx.lineTo(305, 370)
+  ctx.bezierCurveTo(167, 434, -23, 424, -150, 379)
+  ctx.bezierCurveTo(-214, 358, -260, 362, -307, 386)
+  ctx.closePath()
+  ctx.fill()
+
+  ctx.beginPath()
+  ctx.moveTo(-312, 340)
+  ctx.bezierCurveTo(-304, 276, -255, 243, -110, 222)
+  ctx.bezierCurveTo(-60, 213, 59, 213, 116, 222)
+  ctx.bezierCurveTo(254, 244, 302, 273, 312, 340)
+  ctx.stroke()
+
+  // Neck
+  ctx.fillStyle = pale
+  ctx.beginPath()
+  ctx.moveTo(-72, 164)
+  ctx.lineTo(-78, 250)
+  ctx.bezierCurveTo(-42, 285, -9, 302, 0, 303)
+  ctx.bezierCurveTo(9, 302, 42, 285, 78, 250)
+  ctx.lineTo(72, 164)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(-23, 258)
+  ctx.bezierCurveTo(-2, 276, 23, 276, 41, 258)
+  ctx.stroke()
+
+  // Face
+  ctx.fillStyle = pale
+  ctx.beginPath()
+  ctx.moveTo(-167, -169)
+  ctx.bezierCurveTo(-178, -86, -171, 47, -151, 119)
+  ctx.bezierCurveTo(-122, 222, -48, 250, 0, 250)
+  ctx.bezierCurveTo(48, 250, 122, 222, 151, 119)
+  ctx.bezierCurveTo(171, 47, 178, -86, 167, -169)
+  ctx.bezierCurveTo(93, -194, 12, -210, -167, -169)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Ears stay behind the glasses but attached to the head.
+  ctx.fillStyle = pale
+  drawEar(-1)
+  drawEar(1)
+
+  // Side hair panels
+  ctx.fillStyle = cyan
+  ctx.beginPath()
+  ctx.moveTo(-178, -167)
+  ctx.lineTo(-152, -179)
+  ctx.bezierCurveTo(-159, -112, -160, -62, -155, -24)
+  ctx.lineTo(-177, -35)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(178, -167)
+  ctx.lineTo(152, -179)
+  ctx.bezierCurveTo(159, -112, 160, -62, 155, -24)
+  ctx.lineTo(177, -35)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Hair
+  ctx.fillStyle = cyan
+  ctx.beginPath()
+  ctx.moveTo(-166, -178)
+  ctx.bezierCurveTo(-150, -300, -75, -352, 42, -340)
+  ctx.lineTo(10, -316)
+  ctx.bezierCurveTo(49, -334, 93, -337, 132, -327)
+  ctx.lineTo(103, -307)
+  ctx.bezierCurveTo(174, -300, 222, -255, 245, -190)
+  ctx.bezierCurveTo(209, -207, 176, -213, 142, -208)
+  ctx.bezierCurveTo(197, -184, 235, -144, 258, -80)
+  ctx.bezierCurveTo(205, -107, 160, -121, 122, -116)
+  ctx.lineTo(152, -61)
+  ctx.bezierCurveTo(99, -91, 44, -109, -3, -116)
+  ctx.bezierCurveTo(-55, -107, -108, -91, -166, -62)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // Eyebrows
+  ctx.strokeStyle = purple
+  ctx.lineWidth = 14
+  ctx.beginPath()
+  ctx.moveTo(-129, -61)
+  ctx.bezierCurveTo(-94, -79, -56, -80, -25, -66)
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(25, -66)
+  ctx.bezierCurveTo(65, -82, 108, -82, 144, -66)
+  ctx.stroke()
+
+  // Glasses
+  ctx.lineWidth = 6
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.28)'
+  roundedRect(-155, -28, 127, 97, 20)
+  ctx.fill()
+  ctx.stroke()
+
+  roundedRect(28, -28, 127, 97, 20)
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(-28, -2)
+  ctx.bezierCurveTo(-10, -11, 10, -11, 28, -2)
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(-155, -11)
+  ctx.lineTo(-190, -19)
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(155, -11)
+  ctx.lineTo(190, -19)
+  ctx.stroke()
+
+  // Eyes
+  ctx.fillStyle = purple
+  for (const x of [-94, 94]) {
+    ctx.beginPath()
+    ctx.arc(x + eyeX, 15 + eyeY, 8, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.beginPath()
+    ctx.moveTo(x - 13 + eyeX, 38 + eyeY)
+    ctx.lineTo(x + 13 + eyeX, 38 + eyeY)
+    ctx.stroke()
+  }
+
+  // Nose
+  ctx.fillStyle = pale
+  ctx.beginPath()
+  ctx.moveTo(-22, -12)
+  ctx.bezierCurveTo(-27, 48, -36, 92, -30, 117)
+  ctx.bezierCurveTo(-16, 142, 25, 145, 42, 119)
+  ctx.bezierCurveTo(48, 102, 38, 91, 31, 88)
+  ctx.stroke()
+
+  // Mustache and beard dots
+  drawStubble(0, 144, 71, 21, 6, 17, 0.68)
+  drawStubble(0, 197, 121, 61, 12, 27, 0.58)
+
+  // Mouth and chin
+  ctx.strokeStyle = purple
+  ctx.lineWidth = 5
+  ctx.beginPath()
+  ctx.moveTo(-58, 179)
+  ctx.bezierCurveTo(-22, 200, 39, 200, 73, 174)
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(-21, 213)
+  ctx.lineTo(51, 213)
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(-16, 223)
+  ctx.lineTo(45, 223)
+  ctx.stroke()
+
+  ctx.restore()
+}
+
+function loop() {
+  drawBackground()
+  drawAvatar()
+  requestAnimationFrame(loop)
+}
+
+loop()
+</script>
+</body>
+</html>
